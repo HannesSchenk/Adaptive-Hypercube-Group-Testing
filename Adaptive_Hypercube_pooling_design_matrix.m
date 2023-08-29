@@ -3,11 +3,14 @@ clear all; clc; close all; addpath('functions\'); rng('default')
 
 n = 50; % number of items
 k = 5; % number of infected items (from prevalence estimation)
-L = 5; % edge length of Hypercube (recomended: 3-12)
+L_e = 3:12; % edge length of Hypercube (recomended: 3-12)
 distribute_operation = "random"; % linear, equal or random
 
 %% Allocation
-S = 10000; % number of itterations
+S = 1000; % number of itterations
+Mean_test_reduction = [];
+M_all = struct;
+for L = L_e
 Test_reduction = nan(S,1);
 false_pos = nan(S,1);
 
@@ -63,18 +66,32 @@ Pool_size = L^(D-1);
 Pool_num = D*L;
 Prevalence = (k/n)*100;
 
+Mean_test_reduction = [Mean_test_reduction, mean(Test_reduction)];
+
+M = zeros(L*D,n);
+for g = 1:(L*D)
+    M(g,rmmissing(Groups(g,:))) = 1; % design matrix
+end
+
+M_all.(strcat("L_",num2str(L))) = M;
+end
 %% Results
 % expected test-reduction
+figure
+plot(L_e,Mean_test_reduction)
+ylabel("Mean test-reduction")
+xlabel("Edge nodes L")
+
 figure
 histogram(Test_reduction,numel(unique(Test_reduction)))
 xlabel("Test-reduction in %")
 ylabel("Number of simulations")
 
-% design matrix
-M = zeros(L*D,n);
-for g = 1:(L*D)
-    M(g,rmmissing(Groups(g,:))) = 1; % design matrix
-end
+% % design matrix
+% M = zeros(L*D,n);
+% for g = 1:(L*D)
+%     M(g,rmmissing(Groups(g,:))) = 1; % design matrix
+% end
 
 figure;
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
