@@ -1,13 +1,13 @@
 clear all; clc; close all; addpath('functions\'); rng('default')
 %% USER INPUT
 
-n = 50; % number of items
+n = 100; % number of items
 k = 5; % number of infected items (from prevalence estimation)
 L_e = 3:12; % edge length of Hypercube (recomended: 3-12)
-distribute_operation = "random"; % linear, equal or random
+distribute_operation = "random"; % dummy yitems distribution linear, equal or random
 
 %% Allocation
-S = 1000; % number of itterations
+S = 1000; % number of itterations for Monte Carlo simulation
 Mean_test_reduction = [];
 M_all = struct;
 for L = L_e
@@ -19,7 +19,7 @@ Inf_idx_all = nan(S,k);
 Num_neg_groups = nan(S,1);
 Num_pos_groups = nan(S,1);
 
-D = ceil(log(n)/log(L)); % dimension
+D = ceil(log(n)/log(L)); % dimension of hypercube
 %% Design Matrix
 for s = 1:S
     infected_idx = sort(randperm(n,k)); 
@@ -81,7 +81,7 @@ figure
 plot(L_e,Mean_test_reduction)
 ylabel("Mean test-reduction")
 xlabel("Edge nodes L")
-
+%%
 figure
 histogram(Test_reduction,numel(unique(Test_reduction)))
 xlabel("Test-reduction in %")
