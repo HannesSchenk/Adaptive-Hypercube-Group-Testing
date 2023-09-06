@@ -5,13 +5,15 @@ k = 5; % number of defective items (from prevalence estimation)
 
 %% Allocation
 L_e = 3:12; % edge length of Hypercube (recomended: 3-12)
-distribute_operation = "random"; % dummy yitems distribution linear, equal or random
+distribute_operation = "random"; % dummy yitems distribution linear, uniform or random
 
-S = 1000; % number of itterations for Monte Carlo simulation
+S = 10000; % number of itterations for Monte Carlo simulation
 Mean_test_reduction = [];
+Std_test_reduction = [];
+test_reduction_all = struct;
 M_all = struct;
 for L = L_e
-    Test_reduction = nan(S,1);
+    test_reduction = nan(S,1);
     false_pos = nan(S,1);
     P_sus_all = nan(S,n);
     Inf_idx_all = nan(S,k);
@@ -32,7 +34,7 @@ for L = L_e
                     C_label = nan(repmat(L,1,D));
                     C_label(1:n) = 1:n; % 1:N linear index
                 end
-            case "equal"
+            case "uniform"
                 C_label(round(linspace(1,L^D,n))) = 1:n; % equally spaced idx
                 if L^(D-1) == n
                     D = D-1;
@@ -55,7 +57,7 @@ for L = L_e
     [Groups,Groups_pos,Groups_neg] = GroupsPosNeg(C_label,C_res,L);
     P_sus = HC_find_suspect(Groups,Groups_pos,Groups_neg,C_label);
     P_sus_all(s,1:numel(P_sus)) = P_sus;
-    Test_reduction(s) = (1-((numel(P_sus)+(D*L))/n))*100;
+    test_reduction(s) = (1-((numel(P_sus)+(D*L))/n))*100;
     Num_neg_groups(s) = numel(Groups_neg);
     Num_pos_groups(s) = numel(Groups_pos);
     false_pos(s) = numel(P_sus)-k;
@@ -65,7 +67,9 @@ for L = L_e
     Pool_num = D*L;
     Prevalence = (k/n)*100;
     
-    Mean_test_reduction = [Mean_test_reduction, mean(Test_reduction)];
+    Mean_test_reduction = [Mean_test_reduction, mean(test_reduction)];
+    Std_test_reduction = [Std_test_reduction, std(test_reduction)];
+    test_reduction_all.(strcat("L_",num2str(L))) = test_reduction;
     M = zeros(L*D,n);
     for g = 1:(L*D)
         M(g,rmmissing(Groups(g,:))) = 1; % design matrix
@@ -74,23 +78,23 @@ for L = L_e
 end
 %% Results
 % expected test-reduction
-figure("Position",[100 100 1100 700])
+figure("Position",[100 100 1300 800])
 subplot(2,2,1)
-plot(L_e,Mean_test_reduction); hold on
+errorbar(L_e,Mean_test_reduction,Std_test_reduction,'Color','k','LineWidth',1)
 [~,idx] = max(Mean_test_reduction);
 opt_L = idx+min(L_e)-1; % optimal edge length
-xline(opt_L)
-ylabel("Mean test-reduction",'Interpreter','latex','FontSize',13)
-xlabel("Edge nodes L",'Interpreter','latex','FontSize',13)
-legend("Mean test-reduction","Optimal edge length","Location","northwest",'Interpreter','latex','FontSize',13)
+xline(opt_L,'--','LineWidth',1)
+ylabel("Mean test-reduction",'Interpreter','latex','FontSize',12)
+xlabel("Edge nodes L",'Interpreter','latex','FontSize',12)
+legend("Mean test-reduction \& standard deviation","Optimal edge length","Location","northoutside",'Interpreter','latex','FontSize',12)
 
 subplot(2,2,2)
-histogram(Test_reduction,numel(unique(Test_reduction)),'FaceColor',[0.7 0.7 0.7]); hold on
-xline(mean(Test_reduction)+std(Test_reduction),'--','Color','k','LineWidth',2)
-xline(mean(Test_reduction)-std(Test_reduction),'--','Color','k','LineWidth',2)
-xlabel("Test-reduction in \%",'Interpreter','latex','FontSize',13)
-ylabel("Number of simulations",'Interpreter','latex','FontSize',13)
-legend("Mean test-reduction likelyhood","Standard deviation","Location","northwest",'Interpreter','latex','FontSize',13)
+histogram(test_reduction_all.(strcat("L_",num2str(opt_L))),numel(unique(test_reduction_all.(strcat("L_",num2str(opt_L))))),'FaceColor',[0.7 0.7 0.7]); hold on
+xline(mean(test_reduction_all.(strcat("L_",num2str(opt_L))))+std(test_reduction_all.(strcat("L_",num2str(opt_L)))),'--','Color','k','LineWidth',1)
+xline(mean(test_reduction_all.(strcat("L_",num2str(opt_L))))-std(test_reduction_all.(strcat("L_",num2str(opt_L)))),'--','Color','k','LineWidth',1)
+xlabel("Test-reduction in \%",'Interpreter','latex','FontSize',12)
+ylabel("Number of simulations",'Interpreter','latex','FontSize',12)
+legend("Mean test-reduction likelyhood","Standard deviation","Location","northoutside",'Interpreter','latex','FontSize',12)
 
 subplot(2,2,[3 4])
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -106,7 +110,7 @@ xline(1.5:(n-0.5),'alpha',0.2)
 yline(1.5:(L*D-0.5),'alpha',0.2)
 xticks([1,L:L:n])
 yticks([1,L:L:(L*D)])
-title('test matrix','Interpreter','latex','FontSize',13)
+title('design matrix','Interpreter','latex','FontSize',12)
 
-% print design matrix ~.csv
+%% print design matrix ~.csv
 % writetable(array2table(M_all.(strcat("L_",num2str(opt_L)))),"Design_Matrix.csv")
